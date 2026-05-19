@@ -1,13 +1,13 @@
-from app.agent import ask_ollama
+from app.agent import ask_ollama, EXPECTED_TEST_RESPONSE
 from app.config import AGENT_NAME, OLLAMA_MODEL, ENABLE_THINKING
 
 
-def main():
+def run():
     print(f"{AGENT_NAME} is starting...")
     print(f"Using local model: {OLLAMA_MODEL}")
     print(f"Thinking enabled: {ENABLE_THINKING}")
 
-    user_prompt = "Return only this exact text: Local model connected."
+    user_prompt = f"Return only this exact text: {EXPECTED_TEST_RESPONSE}"
 
     response = ask_ollama(user_prompt)
 
@@ -16,4 +16,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run()
