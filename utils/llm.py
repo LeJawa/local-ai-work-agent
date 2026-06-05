@@ -10,7 +10,10 @@ from app.config import OLLAMA_BASE_URL, OLLAMA_MODEL, ENABLE_THINKING
 def round_up(n, multiple=256):
     return math.ceil(n / multiple) * multiple
 
-def get_prompt_token_count(payload) -> int:
+def get_prompt_token_count(payload, tries = 0) -> int:
+    if tries > 3:
+        raise Exception("Failed to get prompt token count after 3 tries")
+
     probe = copy.deepcopy(payload)
     probe["stream"] = False
 
@@ -27,8 +30,13 @@ def get_prompt_token_count(payload) -> int:
     )
     r.raise_for_status()
 
-    data = r.json()
-    return data["prompt_eval_count"]
+    prompt_count = r.json()["prompt_eval_count"]
+
+    if prompt_count < 10:
+        logger.warning(f"Prompt token count is {prompt_count}; retrying...")
+        return get_prompt_token_count(payload, tries + 1)
+
+    return prompt_count
 
 def choose_num_ctx(payload, num_predict: int, margin=128) -> int:
     prompt_tokens = get_prompt_token_count(payload)
@@ -62,8 +70,8 @@ def ask_local_model(prompt:str, system_prompt: str, num_predict=80, num_ctx=1024
 
     payload["options"]["num_ctx"] = num_ctx
 
-    logger.debug(f"=========== New request ===========")
-    logger.debug(f"Payload:\n{json.dumps(payload, indent=2)}")
+    logger.trace(f"=========== New request ===========")
+    logger.trace(f"Payload:\n{json.dumps(payload, indent=2)}")
 
     req_response = requests.post(
         f"{OLLAMA_BASE_URL}/api/chat",
@@ -74,7 +82,7 @@ def ask_local_model(prompt:str, system_prompt: str, num_predict=80, num_ctx=1024
     req_response.raise_for_status()
     data = req_response.json()
 
-    logger.debug(f"Response:\n{json.dumps(data, indent=2)}")
+    logger.trace(f"Response:\n{json.dumps(data, indent=2)}")
 
     response = data["message"]["content"]
 

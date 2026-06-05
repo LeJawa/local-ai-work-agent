@@ -1,30 +1,22 @@
+from logger import logger
 import sys
 import os
 import json
 from time import time
 from pathlib import Path
-from app.agent import summarize_messages_no_batch
+from processors.communication_summary_processor import summarize_messages_no_batch, summarize_messages
 from app.config import AGENT_NAME, OLLAMA_MODEL, ENABLE_THINKING, MODEL_PROVIDER, GEMINI_MODEL
-from loguru import logger
+from datetime import datetime
 
-logger.remove()
-
-def terminal_format(record):
-    if record["level"].name == "INFO":
-        return "{message}\n"
-    return "{level} | {message}\n"
-
-logger.add(sys.stderr, level="INFO", format=terminal_format)
-
-logger.add("data/logs/{time}.log", level="DEBUG")
+timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f")
 
 INPUT_PATHS = [
     Path("data/inbox/work_email_messages.json"),
     Path("data/inbox/personal_email_messages.json")
 ]
 
-OUTPUT_PATH = Path("data/outputs/communication_summary_email.md")
-RAW_OUTPUT_PATH = Path("data/outputs/communication_summary_email.json")
+OUTPUT_PATH = Path(f"data/outputs/communication_summary_email_{timestamp}.md")
+RAW_OUTPUT_PATH = Path(f"data/outputs/communication_summary_email_{timestamp}.json")
 
 def load_messages():
     with open(INPUT_PATHS[0], "r") as f:
@@ -55,7 +47,7 @@ def main():
     summary = summarize_messages_no_batch(messages)
     summary_end_time = time()
 
-    logger.info(f"Summary created in {summary_end_time - summary_start_time:.2f} seconds.\n")
+    logger.success(f"Summary created in {summary_end_time - summary_start_time:.2f} seconds.\n")
 
     summary_text = json.dumps(summary, indent=4)
 
@@ -75,7 +67,7 @@ def main():
 
     end_time = time()
     total_time = end_time - start_time
-    logger.info(f"Total execution time: {total_time:.2f} seconds.")
+    logger.warning(f"Total execution time: {total_time:.2f} seconds.")
 
 
 if __name__ == "__main__":
